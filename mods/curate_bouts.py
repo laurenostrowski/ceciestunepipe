@@ -19,7 +19,7 @@ def bout_fs_check(bout_pd):
     """ get sample rates for each recording """
     fs_all = []
     # loop through first bout extracted from each unique raw file
-    for f in bout_pf['file'].unique():
+    for f in bout_pd['file'].unique():
         fs_all.append(bout_pd.loc[bout_pd[bout_pd['file'] == f].index[0],'sample_rate'])
     # assert same sample rate for all files
     assert(len(np.unique(fs_all)) == 1)
@@ -441,7 +441,7 @@ class TrimBout():
         self.ax[1].set_ylim([1600, 9000])
 
 
-def update_trimmed_bouts(bout_pd, start_s, end_s, fs):     ## , waveform_edges
+def update_trimmed_bouts(bout_pd, start_s, end_s, fs, fs_ap=None):
     """
      Trim bouts and repopulate entries in bouts dataframe
 
@@ -461,10 +461,29 @@ def update_trimmed_bouts(bout_pd, start_s, end_s, fs):     ## , waveform_edges
     warnings.simplefilter(action='ignore', category=pd.errors.SettingWithCopyWarning)
     for i, bout_idx in enumerate(bout_pd.index.tolist()):
         bouts_pd_updated['waveform'][bout_idx] = bout_pd['waveform'][bout_idx][start_waveform[i]:end_waveform[i]]
+        
+        # Trim auxiliary waveform(s)
+        for wave_type in ['male_XLR_waveform', 'fem_XLR_waveform', 'fem_waveform']:
+            if wave_type in bout_pd.columns:
+                if bout_pd.loc[bout_idx, wave_type] is not None:
+                    bouts_pd_updated[wave_type][bout_idx] = bout_pd[wave_type][bout_idx][start_waveform[i]:end_waveform[i]]
     warnings.resetwarnings()
     
+    # Verify that sample rates are the same (they should be!!)
+    if 'sample_rate' in bout_pd.columns:
+        if len(bout_pd.sample_rate.unique()) > 1:
+            warnings.warn('More than one USB sample rate detected', UserWarning)
+    if 'XLR_sample_rate' in bout_pd.columns:
+        if len(bout_pd.XLR_sample_rate.unique()) > 1:
+            warnings.warn('More than one XLR sample rate detected', UserWarning)
+        if 'sample_rate' in bout_pd.columns:
+            for x_sr in bout_pd.XLR_sample_rate.unique():
+                for u_sr in bout_pd.sample_rate.unique():
+                    if x_sr != u_sr:
+                        warnings.warn('Sample rates between USB and XLR mics do not match', UserWarning)
+    
     # Update 'start_ms', 'len_ms', and 'end_ms'
-    start_ms_trim = (start_s * 1000).astype(int)      ## - waveform_edges
+    start_ms_trim = (start_s * 1000).astype(int)
     bouts_pd_updated['start_ms'] = (bout_pd.start_ms + start_ms_trim).astype(int)
     bouts_pd_updated['len_ms'] = ((end_waveform - start_waveform) / fs * 1000).astype(int)
     bouts_pd_updated['end_ms'] = (bouts_pd_updated['start_ms'] + bouts_pd_updated['len_ms']).astype(int)
@@ -472,6 +491,12 @@ def update_trimmed_bouts(bout_pd, start_s, end_s, fs):     ## , waveform_edges
     # Recalculate 'start_sample' and 'end_sample'
     bouts_pd_updated['start_sample'] = (bouts_pd_updated['start_ms'] * (fs/1000)).astype(int)
     bouts_pd_updated['end_sample'] = (bouts_pd_updated['end_ms'] * (fs/1000)).astype(int)
+    
+    # If neural data, update 'start_ms_ap_0' and 'start_sample_ap_0'
+    if 'start_ms_ap_0' in bout_pd.columns:
+        bouts_pd_updated['start_ms_ap_0'] = (bout_pd.start_ms_ap_0 + start_ms_trim).astype(int)
+    if 'start_sample_ap_0' in bout_pd.columns:
+        bouts_pd_updated['start_sample_ap_0'] = (bout_pd.start_sample_ap_0 + (start_s * fs_ap)).astype(int)
     
     return bouts_pd_updated
 
@@ -618,5 +643,10 @@ def update_trimmed_bouts_legacy(bout_pd, start_s, end_s, fs, waveform_edges):
     bouts_pd_updated['start_sample'] = (bouts_pd_updated['start_ms'] * (fs/1000)).astype(int)
     bouts_pd_updated['end_sample'] = (bouts_pd_updated['end_ms'] * (fs/1000)).astype(int)
     
+    # If neural data, update 'start_ms_ap_0' and 'start_sample_ap_0'
+    if 'start_ms_ap_0' in bout_pd.columns:
+        bouts_pd_updated['start_ms_ap_0'] = (bout_pd.start_ms_ap_0 + start_ms_trim).astype(int)
+    if 'start_sample_ap_0' in bout_pd.columns:
+        bouts_pd_updated['start_sample_ap_0'] = (bout_pd.start_sample_ap_0 + (start_s * fs_ap)).astype(int)
+    
     return bouts_pd_updated
-
