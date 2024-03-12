@@ -458,7 +458,7 @@ def update_trimmed_bouts(bout_pd, start_s, end_s, fs, fs_ap=None):
     # Trim waveform
     start_waveform = (start_s * fs).astype(int)
     end_waveform = (end_s * fs).astype(int)
-    warnings.simplefilter(action='ignore', category=pd.errors.SettingWithCopyWarning)
+    warnings.simplefilter(action='ignore')
     for i, bout_idx in enumerate(bout_pd.index.tolist()):
         bouts_pd_updated['waveform'][bout_idx] = bout_pd['waveform'][bout_idx][start_waveform[i]:end_waveform[i]]
         
@@ -650,3 +650,4 @@ def update_trimmed_bouts_legacy(bout_pd, start_s, end_s, fs, waveform_edges):
         bouts_pd_updated['start_sample_ap_0'] = (bout_pd.start_sample_ap_0 + (start_s * fs_ap)).astype(int)
     
     return bouts_pd_updated
+
