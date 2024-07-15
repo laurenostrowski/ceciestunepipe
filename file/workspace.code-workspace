@@ -1,0 +1,14 @@
+{
+	"folders": [
+		{
+			"path": "../../../swissknife"
+		},
+		{
+			"path": "../../../pipefinch"
+		},
+		{
+			"path": "../.."
+		}
+	],
+	"settings": {}
+}
