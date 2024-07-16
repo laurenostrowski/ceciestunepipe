@@ -297,7 +297,15 @@ def plot_summary(bpd: pd.DataFrame, start: str, end: str, fig=None, bird=None, d
     if len(c) > 1: cmap = ((c - min(c)) / (max(c) - min(c)))
     else: cmap = np.array([1])
     plt.bar(times, bouts_count, color=plt.cm.viridis(cmap[::-1]))
-    
+    # if len(c) > 1:
+    #     n = len(times)
+    #     cmap = plt.cm.viridis(np.linspace(0, 1, n//2))
+    #     cmap = np.concatenate([cmap, cmap[::-1]])
+        
+    # else:
+    #     cmap = np.array([1])
+    #     cmap = plt.cm.viridis(cmap[::-1])
+    # plt.bar(times, bouts_count, color=cmap)
     plt.xlabel('time')
     plt.ylabel('# bouts')
     if bird is not None and date is not None:
