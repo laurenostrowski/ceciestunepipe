@@ -240,7 +240,7 @@ class VizBout():
 #         self.spec_plot.imshow(self.sxx,aspect='auto',cmap='inferno')
         [ax.cla() for ax in self.ax]
         # Lowpass filter
-        b, a = butter_filt(self.fs, highcut = 1600, btype='high')
+        b, a = butter_filt(self.fs, highcut = 300, btype='high')
         x = np.squeeze(self.x[:, 0]) if np.ndim(self.x) > 1 else self.x
         mic_arr_hp = noncausal_filter(x, b, a)
         # Tim Sainburg's noise reduce algorithm
@@ -257,9 +257,9 @@ class VizBout():
         self.ax[1].set_xlim([t[0], t[-1]])
         self.ax[1].tick_params(axis='x', labelsize=12)
         self.ax[1].set_ylabel('f (kHz)', fontsize=16)
-        self.ax[1].set_yticks([0,2000, 4000, 6000, 8000])
+        self.ax[1].set_yticks([0, 2000, 4000, 6000, 8000])
         self.ax[1].set_yticklabels(['0', '2', '4', '6', '8'], fontsize=12)
-        self.ax[1].set_ylim([1600, 9000])
+        self.ax[1].set_ylim([300, 9000])
         
 
 def give_summary(bpd: pd.DataFrame):
@@ -297,7 +297,15 @@ def plot_summary(bpd: pd.DataFrame, start: str, end: str, fig=None, bird=None, d
     if len(c) > 1: cmap = ((c - min(c)) / (max(c) - min(c)))
     else: cmap = np.array([1])
     plt.bar(times, bouts_count, color=plt.cm.viridis(cmap[::-1]))
-    
+    # if len(c) > 1:
+    #     n = len(times)
+    #     cmap = plt.cm.viridis(np.linspace(0, 1, n//2))
+    #     cmap = np.concatenate([cmap, cmap[::-1]])
+        
+    # else:
+    #     cmap = np.array([1])
+    #     cmap = plt.cm.viridis(cmap[::-1])
+    # plt.bar(times, bouts_count, color=cmap)
     plt.xlabel('time')
     plt.ylabel('# bouts')
     if bird is not None and date is not None:
@@ -420,7 +428,7 @@ class TrimBout():
     def show(self):
         [ax.cla() for ax in self.ax]
         # Lowpass filter
-        b, a = butter_filt(self.fs, highcut = 1600, btype='high')
+        b, a = butter_filt(self.fs, highcut = 300, btype='high')
         mic_arr_hp = noncausal_filter(self.x, b, a)
         # Tim Sainburg's noise reduce algorithm
         mic_arr_nr = nr.reduce_noise(self.x, self.fs, n_std_thresh_stationary=0.5)
@@ -436,9 +444,9 @@ class TrimBout():
         self.ax[1].set_xlim([t[0], t[-1]])
         self.ax[1].tick_params(axis='x', labelsize=12)
         self.ax[1].set_ylabel('f (kHz)', fontsize=16)
-        self.ax[1].set_yticks([0,2000, 4000, 6000, 8000])
+        self.ax[1].set_yticks([0, 2000, 4000, 6000, 8000])
         self.ax[1].set_yticklabels(['0', '2', '4', '6', '8'], fontsize=12)
-        self.ax[1].set_ylim([1600, 9000])
+        self.ax[1].set_ylim([300, 9000])
 
 
 def update_trimmed_bouts(bout_pd, start_s, end_s, fs, fs_ap=None):
