@@ -11,13 +11,6 @@ from ceciestunepipe.util import syncutil as su
 
 logger = logging.getLogger('ceciestunepipe.util.sglxsync_debug')
 
-
-
-
-
-
-
-
 def load_syn_dict(exp_struct: dict, stream:str, arrays_to_load=['evt_arr', 't_0']) -> dict:
     
     syn_dict_path = os.path.join(exp_struct['folders']['derived'],  
@@ -291,16 +284,24 @@ def bout_dict_from_pd_mismatched_streams(bout_pd: pd.DataFrame, all_syn_dict: di
     bout_dict['start_sample_nidq'] = bout_dict['start_sample_nidq'][keep]
     bout_dict['start_sample_wav'] = bout_dict['start_sample_wav'][keep]
     
-    start_ms_ap_0 = all_syn_dict['wav']['t_p'][bout_dict['start_sample_wav']]*1000
+    if bout_dict['start_sample_wav'].size > 0:
+        start_ms_ap_0 = all_syn_dict['wav']['t_p'][bout_dict['start_sample_wav']]*1000
     
-    bout_dict['start_ms_ap_0'] = start_ms_ap_0
-    bout_dict['start_sample_ap_0'] = np.array([np.where(all_syn_dict['ap_0']['t_0'] > start)[0][0] for start in start_ms_ap_0*0.001])
-    bout_dict['start_sample_ap_0'] = (bout_dict['start_sample_ap_0']).astype(np.int64)
-    bout_dict['end_sample_ap_0'] = bout_dict['start_sample_ap_0'] + (bout_dict['len_ms'] * bout_dict['s_f_ap_0'] * 0.001).astype(np.int64)
+        bout_dict['start_ms_ap_0'] = start_ms_ap_0
+        bout_dict['start_sample_ap_0'] = np.array([np.where(all_syn_dict['ap_0']['t_0'] > start)[0][0] for start in start_ms_ap_0*0.001])
+        bout_dict['start_sample_ap_0'] = (bout_dict['start_sample_ap_0']).astype(np.int64)
+        bout_dict['end_sample_ap_0'] = bout_dict['start_sample_ap_0'] + (bout_dict['len_ms'] * bout_dict['s_f_ap_0'] * 0.001).astype(np.int64)
+    
+    else:
+        bout_dict['start_ms_ap_0'] = []
+        bout_dict['start_sample_ap_0'] = []
+        bout_dict['start_sample_ap_0'] = []
+        bout_dict['end_sample_ap_0'] = []
     
     ## update the bout pandas dataframe with the synced columns
     bout_pd = bout_pd.head(keep.sum()) # trim bout_pd to bouts within ap_0 recording
     for k in ['start_ms_ap_0', 'start_sample_ap_0', 'len_ms', 'start_ms', 'start_sample_naive']:
+        pd.options.mode.chained_assignment = None
         bout_pd[k] = bout_dict[k]
 
     return bout_dict, bout_pd
