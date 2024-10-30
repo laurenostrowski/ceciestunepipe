@@ -16,7 +16,8 @@ locations_dict['txori']= {'mnt': os.path.abspath('/mnt/cube/chronic_ephys/'),
                           'tmp': os.path.abspath('/mnt/cube/chronic_ephys/tmp')}
 locations_dict['pakhi']= {'mnt': os.path.abspath('/mnt/cube/chronic_ephys/'),
                           'tmp': os.path.abspath('/mnt/cube/chronic_ephys/tmp')}
-
+locations_dict['tversky']= {'mnt': os.path.abspath('/mnt/cube/chronic_ephys/'),
+                          'tmp': os.path.abspath('/mnt/cube/chronic_ephys/tmp')}
 
 def get_locations_from_hostname():
     hostname = socket.gethostname().split('.')[0]

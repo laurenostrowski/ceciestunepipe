@@ -260,6 +260,157 @@ class VizBout():
         self.ax[1].set_yticks([0, 2000, 4000, 6000, 8000])
         self.ax[1].set_yticklabels(['0', '2', '4', '6', '8'], fontsize=12)
         self.ax[1].set_ylim([300, 9000])
+
+
+class VizBoutChunk():
+    def __init__(self,bouts_pd,recording_sample_rate):
+        self.bout = None
+        self.bouts_pd = bouts_pd
+        self.bout_series = None
+        self.is_song = None
+        self.is_call = None
+        self.is_noise = None
+        self.is_sil = None
+        self.bout_counter = None
+        self.bout_id = None
+        self.buttons = {}
+        self.m_pick = None
+        self.fig_waveform = None
+        self.fig_spectrogram = None
+        self.x = None
+        self.sxx = None   
+        self.fs = recording_sample_rate
+        self.sub_sample = 1
+        self.init_fig()
+        self.init_widget()
+        self.show()
+                
+    def init_fig(self):
+#         song_fig = plt.figure(figsize=(10,4))
+#         self.wave_plot = song_fig.add_subplot(211)
+#         self.spec_plot = song_fig.add_subplot(212)
+        self.song_fig, self.ax = plt.subplots(nrows=2, gridspec_kw={'height_ratios': [1,3]}, figsize=(10,4), constrained_layout=True)
+
+    def init_widget(self):
+        self.bout_counter = Counter()
+        self.is_song = widgets.Checkbox(description='song')
+        self.is_call = widgets.Checkbox(description='calls')
+        self.is_noise = widgets.Checkbox(description='noise')
+        self.is_sil = widgets.Checkbox(description='silence')
+        self.buttons['Next'] = widgets.Button(description="Next", button_style='info',icon='plus')   
+        self.buttons['Prev'] = widgets.Button(description="Prev", button_style='warning',icon='minus')   
+        self.buttons['Silence'] = widgets.Button(description="Silence", button_style='primary')
+        self.buttons['Song'] = widgets.Button(description="Song", button_style='success',icon='check')
+        self.buttons['Noise'] = widgets.Button(description="Noise", button_style='danger',icon='wrong')
+        self.buttons['Calls'] = widgets.Button(description="Calls")
+        [b.on_click(self.button_click) for b in self.buttons.values()]
+        top_box = widgets.HBox([self.buttons['Prev'], self.buttons['Next'], self.buttons['Silence']])
+        bottom_box = widgets.HBox([self.buttons['Noise'], self.buttons['Song'], self.buttons['Calls']])
+        button_box = widgets.VBox([top_box, bottom_box])
+        self.m_pick = widgets.IntSlider(value=0, min=0, max=self.bouts_pd.index.size-1, step=1, 
+                                        description="Bout candidate index")
+        control_box = widgets.HBox([button_box,
+                                  widgets.VBox([self.is_song, self.is_call, self.is_noise, self.is_sil]),
+                                  widgets.VBox([self.m_pick])])
+        link((self.m_pick, 'value'), (self.bout_counter, 'value'))
+        self.update_bout()
+        self.is_song.observe(self.song_checked, names='value')
+        self.is_call.observe(self.call_checked, names='value')
+        self.is_noise.observe(self.noise_checked, names='value')
+        self.is_sil.observe(self.sil_checked, names='value')
+        self.m_pick.observe(self.slider_change, names='value')
+        display(control_box)
+        
+    def button_click(self, button):        
+        self.bout_id = self.bout_counter.value
+        curr_bout = self.bout_counter
+        if button.description == 'Next':
+            curr_bout.value += 1
+        elif button.description == 'Prev':
+            curr_bout.value -= 1
+        elif button.description == 'Song':
+            self.bouts_pd.loc[self.bout_id, 'is_song'] = True
+            self.bouts_pd.loc[self.bout_id, 'is_call'] = False
+            self.bouts_pd.loc[self.bout_id, 'is_noise'] = False
+            self.bouts_pd.loc[self.bout_id, 'is_sil'] = False
+            curr_bout.value += 1
+        elif button.description == 'Calls':
+            self.bouts_pd.loc[self.bout_id, 'is_song'] = False
+            self.bouts_pd.loc[self.bout_id, 'is_call'] = True
+            self.bouts_pd.loc[self.bout_id, 'is_noise'] = False
+            self.bouts_pd.loc[self.bout_id, 'is_sil'] = False
+            curr_bout.value += 1
+        elif button.description == 'Noise':
+            self.bouts_pd.loc[self.bout_id, 'is_song'] = False
+            self.bouts_pd.loc[self.bout_id, 'is_call'] = False
+            self.bouts_pd.loc[self.bout_id, 'is_noise'] = True
+            self.bouts_pd.loc[self.bout_id, 'is_sil'] = False
+            curr_bout.value += 1
+        elif button.description == 'Silence':
+            self.bouts_pd.loc[self.bout_id, 'is_song'] = False
+            self.bouts_pd.loc[self.bout_id, 'is_call'] = False
+            self.bouts_pd.loc[self.bout_id, 'is_noise'] = False
+            self.bouts_pd.loc[self.bout_id, 'is_sil'] = True
+            curr_bout.value += 1
+        if curr_bout.value > self.m_pick.max:
+            curr_bout.value = 0 
+        if curr_bout.value < self.m_pick.min:
+            curr_bout.value = self.m_pick.max
+    
+    def slider_change(self, change):
+        self.update_bout()
+        self.show()
+    
+    def song_checked(self, bc):
+        self.bouts_pd.loc[self.bout_id, 'is_song'] = bc['new']
+    
+    def call_checked(self, bc):
+        self.bouts_pd.loc[self.bout_id, 'is_call'] = bc['new']
+    
+    def noise_checked(self, bc):
+        self.bouts_pd.loc[self.bout_id, 'is_noise'] = bc['new']
+    
+    def sil_checked(self, bc):
+        self.bouts_pd.loc[self.bout_id, 'is_sil'] = bc['new']
+    
+    def update_bout(self):
+        self.bout_id = self.bout_counter.value
+        self.bout_series = self.bouts_pd.iloc[self.bout_id]
+        self.is_song.value = bool(self.bout_series['is_song'])
+        self.is_call.value = bool(self.bout_series['is_call'])
+        self.is_noise.value = bool(self.bout_series['is_noise'])
+        self.is_sil.value = bool(self.bout_series['is_sil'])
+        self.x = self.bout_series['waveform'][::self.sub_sample]
+        self.sxx = np.flipud(self.bout_series['spectrogram'][::self.sub_sample])
+        
+    def show(self):
+#         time_pts = np.arange(self.x.size) * self.sub_sample / self.fs 
+#         self.wave_plot.clear()
+#         self.spec_plot.clear()
+#         self.wave_plot.plot(time_pts,self.x,c='k')
+#         self.spec_plot.imshow(self.sxx,aspect='auto',cmap='inferno')
+        [ax.cla() for ax in self.ax]
+        # Lowpass filter
+        b, a = butter_filt(self.fs, highcut = 300, btype='high')
+        x = np.squeeze(self.x[:, 0]) if np.ndim(self.x) > 1 else self.x
+        mic_arr_hp = noncausal_filter(x, b, a)
+        # Tim Sainburg's noise reduce algorithm
+        mic_arr_nr = nr.reduce_noise(x, self.fs, n_std_thresh_stationary=0.5)
+        # Calculate spectrogram
+        f, t, sxx = sp.ms_spectrogram(mic_arr_hp.flatten(), self.fs)
+        # Graph sonogram
+        self.ax[0].plot(mic_arr_nr.flatten(), 'black')
+        self.ax[0].set_xlim([0, len(mic_arr_nr.flatten())])
+        self.ax[0].set_axis_off()
+        # Graph spectrogram
+        self.ax[1].pcolormesh(t, f, np.log(sxx), cmap='inferno')
+        self.ax[1].set_xlabel('time (s)', fontsize=16)
+        self.ax[1].set_xlim([t[0], t[-1]])
+        self.ax[1].tick_params(axis='x', labelsize=12)
+        self.ax[1].set_ylabel('f (kHz)', fontsize=16)
+        self.ax[1].set_yticks([0, 2000, 4000, 6000, 8000])
+        self.ax[1].set_yticklabels(['0', '2', '4', '6', '8'], fontsize=12)
+        self.ax[1].set_ylim([300, 9000])
         
 
 def give_summary(bpd: pd.DataFrame):

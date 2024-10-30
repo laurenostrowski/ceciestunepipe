@@ -234,15 +234,15 @@ def bout_dict_from_pd(bout_pd: pd.DataFrame, all_syn_dict: dict, s_f_key: str='w
     len_ms = bout_pd['len_ms'].values
 
     bout_dict = {
-            's_f': s_f, # s_f used to get the spectrogram
-            's_f_nidq': all_syn_dict['nidq']['s_f'],
-            's_f_ap_0': all_syn_dict['ap_0']['s_f'],
-           'start_ms': start_ms,
-            'len_ms': len_ms,
-           'start_sample_naive': ( start_ms * s_f * 0.001).astype(np.int64),
-           'start_sample_nidq': np.array([np.where(all_syn_dict['nidq']['t_0'] > start)[0][0] for start in start_ms*0.001]),
-            'start_sample_wav': np.array([np.where(all_syn_dict['wav']['t_0'] > start)[0][0] for start in start_ms*0.001])
-           }
+        's_f': s_f, # s_f used to get the spectrogram
+        's_f_nidq': all_syn_dict['nidq']['s_f'],
+        's_f_ap_0': all_syn_dict['ap_0']['s_f'],
+        'start_ms': start_ms,
+        'len_ms': len_ms,
+        'start_sample_naive': ( start_ms * s_f * 0.001).astype(np.int64),
+        'start_sample_nidq': np.array([np.where(all_syn_dict['nidq']['t_0'] > start)[0][0] for start in start_ms*0.001]),
+        'start_sample_wav': np.array([np.where(all_syn_dict['wav']['t_0'] > start)[0][0] for start in start_ms*0.001])
+    }
     
     start_ms_ap_0 = all_syn_dict['wav']['t_p'][bout_dict['start_sample_wav']]*1000
     
